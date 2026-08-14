@@ -13,7 +13,6 @@ export default function App() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [searchSlot, setSearchSlot] = useState<number | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [debugLog, setDebugLog] = useState<string | null>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -84,69 +83,34 @@ export default function App() {
       const file = new File([blob], 'my-best-anime-archive.jpg', { type: 'image/jpeg' });
       
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      const canShareExists = typeof navigator.canShare === 'function';
-      const shareExists = typeof navigator.share === 'function';
-      const isSecure = window.isSecureContext;
       
-      let canShareResult = false;
-      try {
-        if (canShareExists) {
-          canShareResult = navigator.canShare({ files: [file] });
-        }
-      } catch (e) {
-        console.error(e);
-      }
-
-      let isTopFrame = 'unknown';
-      try {
-        isTopFrame = String(window.top === window.self);
-      } catch (e) {
-        isTopFrame = 'error (cross-origin)';
-      }
-
-      const logLines = [
-        `-- Environment Context --`,
-        `location.href: ${window.location.href}`,
-        `location.protocol: ${window.location.protocol}`,
-        `isSecureContext: ${isSecure}`,
-        `top === self: ${isTopFrame}`,
-        `document.referrer: ${document.referrer || '(empty)'}`,
-        `-- Share API --`,
-        `navigator.share exists: ${shareExists}`,
-        `navigator.canShare exists: ${canShareExists}`,
-        `File type: ${file.type}`,
-        `File size: ${file.size} bytes`,
-        `canShare({ files: [file] }): ${canShareResult}`,
-        `userAgent: ${navigator.userAgent}`,
-        `-- Action Log --`
-      ];
-
-      setDebugLog(logLines.join('\n'));
+      let shared = false;
       
-      if (canShareResult) {
-        setDebugLog(prev => prev + '\nCalling navigator.share()...');
+      if (isMobile && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
             files: [file],
             title: "My Best Anime — Archive"
           });
-          setDebugLog(prev => prev + '\nShare completed or cancelled safely.');
+          shared = true;
         } catch (err: any) {
           if (err.name === 'AbortError') {
-            setDebugLog(prev => prev + '\nShare cancelled by user (AbortError)');
+            shared = true; // Mark as handled to prevent fallback download
           } else {
-            setDebugLog(prev => prev + `\nShare failed: ${err.name} - ${err.message}`);
+            console.error('Share failed:', err);
           }
         }
-      } else {
-        setDebugLog(prev => prev + '\nSkipping share. canShare() returned false or threw error.');
       }
       
-      // Fallback explicitly disabled for diagnostics
-      // if (!shared) { ... }
+      if (!shared) {
+        const link = document.createElement('a');
+        link.download = 'my-best-anime-archive.jpg';
+        link.href = dataUrl;
+        link.click();
+      }
     } catch (err) {
       console.error('Export failed', err);
-      setDebugLog(prev => (prev || '') + `\nExport generation failed: ${err}`);
+      alert('Failed to generate export. Please try again.');
     } finally {
       setIsExporting(false);
     }
@@ -204,23 +168,6 @@ export default function App() {
       />
 
       <ExportView collection={collection} exportRef={exportRef} />
-
-      {debugLog && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4">
-          <div className="bg-black text-green-400 font-mono text-xs p-4 rounded border border-green-500/30 w-full max-w-md overflow-auto max-h-[80vh]">
-            <div className="flex justify-between items-center mb-4 border-b border-green-500/30 pb-2">
-              <h3 className="font-bold tracking-widest uppercase">Export Diagnostic</h3>
-              <button 
-                onClick={() => setDebugLog(null)} 
-                className="text-white hover:text-green-400 px-2 py-1 uppercase tracking-widest"
-              >
-                Close
-              </button>
-            </div>
-            <pre className="whitespace-pre-wrap break-words leading-relaxed">{debugLog}</pre>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
