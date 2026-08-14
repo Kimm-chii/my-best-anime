@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toJpeg } from 'html-to-image';
-import { Download } from 'lucide-react';
+import { Download, Share2 } from 'lucide-react';
 import { loadCollection, saveCollection } from './lib/storage';
 import { Anime } from './types';
 import { SearchModal } from './components/SearchModal';
 import { HeroCollage } from './components/HeroCollage';
 import { ArchiveList } from './components/ArchiveList';
-import { ExportView } from './components/ExportView';
+import { ExportView, ExportFormat } from './components/ExportView';
+import { ExportModal } from './components/ExportModal';
 
 export default function App() {
   const [collection, setCollection] = useState<(Anime | null)[]>(Array(10).fill(null));
   const [isLoaded, setIsLoaded] = useState(false);
   const [searchSlot, setSearchSlot] = useState<number | null>(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('feed');
   const [isExporting, setIsExporting] = useState(false);
   const [exportCollection, setExportCollection] = useState<(Anime | null)[] | null>(null);
   const exportRef = useRef<HTMLDivElement>(null);
@@ -109,12 +112,12 @@ export default function App() {
       // 3. Actual render
       const dataUrl = await toJpeg(exportRef.current, exportOptions);
       
+      const fileName = `my-best-anime-archive-${exportFormat}.jpg`;
       const response = await fetch(dataUrl);
       const blob = await response.blob();
-      const file = new File([blob], 'my-best-anime-archive.jpg', { type: 'image/jpeg' });
+      const file = new File([blob], fileName, { type: 'image/jpeg' });
       
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      
       let shared = false;
       
       if (isMobile && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
@@ -135,10 +138,12 @@ export default function App() {
       
       if (!shared) {
         const link = document.createElement('a');
-        link.download = 'my-best-anime-archive.jpg';
+        link.download = fileName;
         link.href = dataUrl;
         link.click();
       }
+
+      setIsExportModalOpen(false);
     } catch (err) {
       console.error('Export failed', err);
       alert('Failed to generate export. Please try again.');
@@ -162,12 +167,12 @@ export default function App() {
         <div className="pointer-events-auto flex items-center shadow-2xl">
           {selectedCount > 0 && (
             <button
-              onClick={handleExport}
+              onClick={() => setIsExportModalOpen(true)}
               disabled={isExporting}
-              className="bg-editorial-light text-editorial-dark hover:bg-white px-8 py-4 font-mono text-xs uppercase tracking-widest flex items-center transition-all disabled:opacity-50"
+              className="bg-editorial-light text-editorial-dark hover:bg-white px-8 py-4 font-mono text-xs uppercase tracking-widest flex items-center transition-all disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
             >
-              {isExporting ? 'Compiling...' : 'Export Archive'}
-              {!isExporting && <Download className="w-4 h-4 ml-3" />}
+              <span>Export Archive</span>
+              <Download className="w-4 h-4 ml-3" />
             </button>
           )}
         </div>
@@ -199,7 +204,22 @@ export default function App() {
         targetSlot={searchSlot}
       />
 
-      <ExportView collection={exportCollection || collection} exportRef={exportRef} />
+      <ExportModal 
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        collection={collection}
+        format={exportFormat}
+        onFormatChange={setExportFormat}
+        onExport={handleExport}
+        isExporting={isExporting}
+        previewRef={exportRef}
+      />
+
+      <ExportView 
+        collection={exportCollection || collection} 
+        format={exportFormat}
+        exportRef={exportRef} 
+      />
     </div>
   );
 }
