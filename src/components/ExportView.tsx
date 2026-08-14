@@ -4,9 +4,10 @@ import { Anime } from '../types';
 interface ExportViewProps {
   collection: (Anime | null)[];
   exportRef: React.RefObject<HTMLDivElement>;
+  exportImages?: Record<number, string>;
 }
 
-export function ExportView({ collection, exportRef }: ExportViewProps) {
+export function ExportView({ collection, exportRef, exportImages }: ExportViewProps) {
   const selectedCount = collection.filter(Boolean).length;
   const slots = Array.from({ length: 10 }, (_, i) => collection[i] || null);
 
@@ -28,7 +29,7 @@ export function ExportView({ collection, exportRef }: ExportViewProps) {
               <div key={idx} className="relative flex-1 h-full border-r border-black/30 last:border-r-0 overflow-hidden">
                 {anime ? (
                   <img 
-                    src={anime.imageUrl} 
+                    src={exportImages?.[idx] || anime.imageUrl} 
                     alt={anime.title}
                     crossOrigin="anonymous"
                     className="absolute inset-0 w-full h-full object-cover object-center filter saturate-50 contrast-125"
@@ -107,7 +108,7 @@ export function ExportView({ collection, exportRef }: ExportViewProps) {
                   {anime ? (
                     <>
                       <div className="w-[80px] h-[120px] bg-black/5 flex-shrink-0 relative overflow-hidden">
-                        <img src={anime.imageUrl} alt="" crossOrigin="anonymous" className="w-full h-full object-cover" />
+                        <img src={exportImages?.[index] || anime.imageUrl} alt="" crossOrigin="anonymous" className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0 flex flex-col justify-center">
                         <h3 className="font-serif text-[32px] leading-tight line-clamp-2">{anime.title}</h3>

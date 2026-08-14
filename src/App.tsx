@@ -13,6 +13,7 @@ export default function App() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [searchSlot, setSearchSlot] = useState<number | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [exportImages, setExportImages] = useState<Record<number, string>>({});
   const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -65,10 +66,31 @@ export default function App() {
     if (!exportRef.current) return;
     setIsExporting(true);
     
-    // Allow React state to flush 'exporting' changes if needed for UI disabling
-    await new Promise(res => setTimeout(res, 100));
-
     try {
+      // Preload images as base64 to ensure they are fully loaded and CORS compliant for the canvas
+      const base64Map: Record<number, string> = {};
+      await Promise.all(collection.map(async (anime, index) => {
+        if (!anime) return;
+        try {
+          // Append timestamp to bypass browser cache that might lack CORS headers
+          const res = await fetch(`${anime.imageUrl}?export=${Date.now()}`, { mode: 'cors' });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const blob = await res.blob();
+          const reader = new FileReader();
+          const base64 = await new Promise<string>((resolve, reject) => {
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+          });
+          base64Map[index] = base64;
+        } catch (e) {
+          console.error(`Failed to preload image for export (slot ${index})`, e);
+        }
+      }));
+      setExportImages(base64Map);
+      
+      // Allow React state to flush 'exporting' changes and apply new base64 images to DOM
+      await new Promise(res => setTimeout(res, 200));
+
       const dataUrl = await toJpeg(exportRef.current, { 
         quality: 0.95,
         pixelRatio: 2, 
@@ -167,7 +189,7 @@ export default function App() {
         targetSlot={searchSlot}
       />
 
-      <ExportView collection={collection} exportRef={exportRef} />
+      <ExportView collection={collection} exportRef={exportRef} exportImages={exportImages} />
     </div>
   );
 }
