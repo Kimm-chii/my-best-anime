@@ -113,7 +113,7 @@ The contrast between the dark editorial hero and clean archive creates a deliber
 ```text
 my-best-anime/
 ├── public/
-│   └── og-image.webp
+│   └── og-image-v2.webp
 │
 ├── src/
 │   ├── components/
