@@ -13,6 +13,7 @@ export default function App() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [searchSlot, setSearchSlot] = useState<number | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [exportCollection, setExportCollection] = useState<(Anime | null)[] | null>(null);
   const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -65,19 +66,48 @@ export default function App() {
     if (!exportRef.current) return;
     setIsExporting(true);
     
-    // Allow React state to flush 'exporting' changes if needed for UI disabling
-    await new Promise(res => setTimeout(res, 100));
-
     try {
-      const dataUrl = await toJpeg(exportRef.current, { 
+      // 1. Safari Fix: Pre-convert all images to Base64 to bypass tainted canvas and SVG cross-origin loading bugs
+      const base64Collection = await Promise.all(
+        collection.map(async (anime) => {
+          if (!anime) return null;
+          try {
+            const res = await fetch(anime.imageUrl, {
+              cache: 'no-cache',
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const blob = await res.blob();
+            const base64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+            return { ...anime, imageUrl: base64 };
+          } catch (e) {
+            console.warn('Failed to convert image to base64', e);
+            return anime; // fallback
+          }
+        })
+      );
+      
+      setExportCollection(base64Collection);
+      
+      // Wait for React to re-render ExportView with Base64 images
+      await new Promise(res => setTimeout(res, 500));
+
+      const exportOptions = { 
         quality: 0.95,
         pixelRatio: 2, 
         backgroundColor: '#0A0A0C',
         useCORS: true,
-        fetchRequestInit: {
-          cache: 'no-cache',
-        },
-      });
+      };
+
+      // 2. Safari Fix: "Warm up" render. Safari sometimes needs a first pass to decode base64 inside the cloned SVG.
+      await toJpeg(exportRef.current, exportOptions).catch(() => {});
+
+      // 3. Actual render
+      const dataUrl = await toJpeg(exportRef.current, exportOptions);
       
       const response = await fetch(dataUrl);
       const blob = await response.blob();
@@ -113,6 +143,7 @@ export default function App() {
       console.error('Export failed', err);
       alert('Failed to generate export. Please try again.');
     } finally {
+      setExportCollection(null);
       setIsExporting(false);
     }
   };
@@ -168,7 +199,7 @@ export default function App() {
         targetSlot={searchSlot}
       />
 
-      <ExportView collection={collection} exportRef={exportRef} />
+      <ExportView collection={exportCollection || collection} exportRef={exportRef} />
     </div>
   );
 }
