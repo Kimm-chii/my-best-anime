@@ -84,7 +84,7 @@ function SortableSlot({
                   <span>{anime.type || 'UNKNOWN'}</span>
                 </div>
               </div>
-              <div className="flex gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity no-export">
+              <div className="flex gap-2 mt-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity no-export">
                 <button onClick={onOpenSearch} className="text-[10px] uppercase font-mono tracking-widest bg-editorial-dark/5 hover:bg-editorial-dark text-editorial-dark hover:text-editorial-light px-2 py-1 transition-colors">Replace</button>
                 <button onClick={onRemove} className="text-[10px] uppercase font-mono tracking-widest border border-editorial-dark/10 hover:border-red-900/50 hover:bg-red-900/10 text-red-900/70 px-2 py-1 transition-colors">Remove</button>
               </div>
