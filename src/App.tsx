@@ -8,6 +8,7 @@ import { HeroCollage } from './components/HeroCollage';
 import { ArchiveList } from './components/ArchiveList';
 import { ExportView, ExportFormat } from './components/ExportView';
 import { ExportModal } from './components/ExportModal';
+import { ImageResultModal } from './components/ImageResultModal';
 
 export default function App() {
   const [collection, setCollection] = useState<(Anime | null)[]>(Array(10).fill(null));
@@ -17,6 +18,8 @@ export default function App() {
   const [exportFormat, setExportFormat] = useState<ExportFormat>('feed');
   const [isExporting, setIsExporting] = useState(false);
   const [exportCollection, setExportCollection] = useState<(Anime | null)[] | null>(null);
+  const [resultImageUrl, setResultImageUrl] = useState<string | null>(null);
+  const [resultFileName, setResultFileName] = useState<string>('');
   const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,6 +34,39 @@ export default function App() {
       saveCollection(collection);
     }
   }, [collection, isLoaded]);
+
+  // Pre-convert images to Base64 in background as soon as export modal opens
+  useEffect(() => {
+    if (isExportModalOpen) {
+      let isMounted = true;
+      const convert = async () => {
+        const base64List = await Promise.all(
+          collection.map(async (anime) => {
+            if (!anime) return null;
+            try {
+              const res = await fetch(anime.imageUrl, { cache: 'no-cache' });
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              const blob = await res.blob();
+              const base64 = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+              });
+              return { ...anime, imageUrl: base64 };
+            } catch (e) {
+              return anime;
+            }
+          })
+        );
+        if (isMounted) {
+          setExportCollection(base64List);
+        }
+      };
+      convert();
+      return () => { isMounted = false; };
+    }
+  }, [isExportModalOpen, collection]);
 
   const handleSelectAnime = (anime: Anime) => {
     let targetIndex = searchSlot;
@@ -70,34 +106,33 @@ export default function App() {
     setIsExporting(true);
     
     try {
-      // 1. Safari Fix: Pre-convert all images to Base64 to bypass tainted canvas and SVG cross-origin loading bugs
-      const base64Collection = await Promise.all(
-        collection.map(async (anime) => {
-          if (!anime) return null;
-          try {
-            const res = await fetch(anime.imageUrl, {
-              cache: 'no-cache',
-            });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const blob = await res.blob();
-            const base64 = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve(reader.result as string);
-              reader.onerror = reject;
-              reader.readAsDataURL(blob);
-            });
-            return { ...anime, imageUrl: base64 };
-          } catch (e) {
-            console.warn('Failed to convert image to base64', e);
-            return anime; // fallback
-          }
-        })
-      );
+      // 1. Ensure Base64 images are populated (fall back if pre-conversion hasn't finished)
+      let currentCollection = exportCollection;
+      if (!currentCollection) {
+        currentCollection = await Promise.all(
+          collection.map(async (anime) => {
+            if (!anime) return null;
+            try {
+              const res = await fetch(anime.imageUrl, { cache: 'no-cache' });
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              const blob = await res.blob();
+              const base64 = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+              });
+              return { ...anime, imageUrl: base64 };
+            } catch (e) {
+              return anime;
+            }
+          })
+        );
+        setExportCollection(currentCollection);
+      }
       
-      setExportCollection(base64Collection);
-      
-      // Wait for React to re-render ExportView with Base64 images
-      await new Promise(res => setTimeout(res, 500));
+      // Brief pause to allow React DOM update for the export target
+      await new Promise(res => setTimeout(res, 150));
 
       const exportOptions = { 
         quality: 0.95,
@@ -106,49 +141,52 @@ export default function App() {
         useCORS: true,
       };
 
-      // 2. Safari Fix: "Warm up" render. Safari sometimes needs a first pass to decode base64 inside the cloned SVG.
+      // 2. Warm up render to ensure Base64 images decode inside SVG canvas
       await toJpeg(exportRef.current, exportOptions).catch(() => {});
 
-      // 3. Actual render
+      // 3. Render final image
       const dataUrl = await toJpeg(exportRef.current, exportOptions);
-      
       const fileName = `my-best-anime-archive-${exportFormat}.jpg`;
-      const response = await fetch(dataUrl);
-      const blob = await response.blob();
-      const file = new File([blob], fileName, { type: 'image/jpeg' });
       
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      let shared = false;
-      
-      if (isMobile && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+      let sharedSuccessfully = false;
+
+      // Try native share sheet immediately on mobile devices
+      if (isMobile && typeof navigator.canShare === 'function') {
         try {
-          await navigator.share({
-            files: [file],
-            title: "My Best Anime — Archive"
-          });
-          shared = true;
-        } catch (err: any) {
-          if (err.name === 'AbortError') {
-            shared = true; // Mark as handled to prevent fallback download
-          } else {
-            console.error('Share failed:', err);
+          const response = await fetch(dataUrl);
+          const blob = await response.blob();
+          const file = new File([blob], fileName, { type: 'image/jpeg' });
+
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: "My Best Anime — Archive"
+            });
+            sharedSuccessfully = true;
           }
+        } catch (err: any) {
+          console.warn('Native share was cancelled or unavailable', err);
         }
       }
-      
-      if (!shared) {
+
+      // If on desktop or if native mobile share didn't complete, open result viewer modal
+      setIsExportModalOpen(false);
+      setResultFileName(fileName);
+      setResultImageUrl(dataUrl);
+
+      // On desktop, also trigger immediate file download
+      if (!isMobile && !sharedSuccessfully) {
         const link = document.createElement('a');
         link.download = fileName;
         link.href = dataUrl;
         link.click();
       }
 
-      setIsExportModalOpen(false);
     } catch (err) {
       console.error('Export failed', err);
-      alert('Failed to generate export. Please try again.');
+      alert('Failed to generate export poster. Please try again.');
     } finally {
-      setExportCollection(null);
       setIsExporting(false);
     }
   };
@@ -213,6 +251,13 @@ export default function App() {
         onExport={handleExport}
         isExporting={isExporting}
         previewRef={exportRef}
+      />
+
+      <ImageResultModal
+        isOpen={!!resultImageUrl}
+        onClose={() => setResultImageUrl(null)}
+        imageUrl={resultImageUrl}
+        fileName={resultFileName}
       />
 
       <ExportView 
