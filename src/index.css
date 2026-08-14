@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Cormorant Garamond", serif;
+  --font-mono: "DM Mono", monospace;
+  
+  --color-editorial-dark: #0A0A0C;
+  --color-editorial-light: #F4F4F2;
+  --color-editorial-accent: #8d7a85;
+  --color-editorial-muted: #5A5A66;
+}
+
+body {
+  font-family: 'DM Mono', monospace;
+  background-color: #0A0A0C;
+  color: #F4F4F2;
+  overflow-x: hidden;
+}
+
+.editorial-collage-container {
+  column-count: 2;
+  column-gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .editorial-collage-container {
+    column-count: 3;
+    column-gap: 3rem;
+  }
+}
+
+.collage-item {
+  break-inside: avoid;
+  margin-bottom: 2rem;
+  transition: transform 0.4s ease, filter 0.4s ease;
+}
+
+.collage-item:nth-child(even) {
+  margin-top: 2rem;
+}
+
+@media (min-width: 768px) {
+  .collage-item:nth-child(3n+2) {
+    margin-top: 4rem;
+  }
+}
+
+.collage-item:hover {
+  filter: brightness(1.1);
+  transform: translateY(-4px);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom scrollbar for an elegant feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0A0A0C;
+}
+::-webkit-scrollbar-thumb {
+  background: #5A5A66;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #8d7a85;
+}
+
+/* Utilities for html-to-image */
+.exporting .no-export {
+  display: none !important;
+}
