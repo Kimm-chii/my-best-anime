@@ -153,6 +153,6 @@ export async function searchAnime(query: string): Promise<Anime[]> {
     } else if (!err?.message?.includes('HTTP') && !err?.message?.includes('GraphQL')) {
       console.warn(`[Search API] Possible rate-limit/API failure for: "${trimmed}"`, err);
     }
-    throw new Error('AniList unavailable. Search is temporarily unavailable.');
+    throw new Error('AniList is temporarily unavailable. Search will return once the service is restored.');
   }
 }

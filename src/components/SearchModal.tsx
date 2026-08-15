@@ -48,7 +48,7 @@ export function SearchModal({ isOpen, onClose, onSelect, targetSlot }: SearchMod
         }
       } catch (err: any) {
         if (active) {
-          setError(err?.message || 'AniList unavailable. Search is temporarily unavailable.');
+          setError(err?.message || 'AniList is temporarily unavailable. Search will return once the service is restored.');
           setResults([]);
           setIsSearching(false);
         }
