@@ -46,9 +46,9 @@ export function SearchModal({ isOpen, onClose, onSelect, targetSlot }: SearchMod
           setResults(data);
           setIsSearching(false);
         }
-      } catch (err) {
+      } catch (err: any) {
         if (active) {
-          setError('CONNECTION TO ARCHIVE FAILED. PLEASE TRY AGAIN LATER.');
+          setError(err?.message || 'AniList unavailable. Search is temporarily unavailable.');
           setResults([]);
           setIsSearching(false);
         }
