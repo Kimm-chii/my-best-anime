@@ -97,3 +97,8 @@ html {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* In-app browsers: no rubber-band bounce at the page edges */
+html {
+  overscroll-behavior: none;
+}

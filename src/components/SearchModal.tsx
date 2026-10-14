@@ -62,8 +62,8 @@ export function SearchModal({ isOpen, onClose, onSelect, targetSlot }: SearchMod
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] px-4 bg-editorial-dark/90 backdrop-blur-sm">
-      <div className="w-full max-w-2xl bg-editorial-light text-editorial-dark border border-editorial-dark/10 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[calc(var(--sh,1vh)*10)] px-4 bg-editorial-dark/90 backdrop-blur-sm">
+      <div className="w-full max-w-2xl bg-editorial-light text-editorial-dark border border-editorial-dark/10 shadow-2xl overflow-hidden flex flex-col max-h-[calc(var(--sh,1vh)*80)]">
         
         {/* Header / Input */}
         <div className="flex items-center p-4 border-b border-editorial-dark/10">

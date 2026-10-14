@@ -83,7 +83,7 @@ export function ImageResultModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/85 backdrop-blur-md animate-fade-in font-mono">
-      <div className="bg-[#0A0A0C] border border-white/10 w-full max-w-2xl max-h-[92vh] flex flex-col rounded-xl shadow-2xl overflow-hidden">
+      <div className="bg-[#0A0A0C] border border-white/10 w-full max-w-2xl max-h-[calc(var(--sh,1vh)*92)] flex flex-col rounded-xl shadow-2xl overflow-hidden">
         
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-black/40">
@@ -112,11 +112,11 @@ export function ImageResultModal({
           )}
 
           {/* Rendered Image Display */}
-          <div className="relative max-h-[50vh] w-full flex items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-black/50 p-2 shadow-2xl">
+          <div className="relative max-h-[calc(var(--sh,1vh)*50)] w-full flex items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-black/50 p-2 shadow-2xl">
             <img
               src={imageUrl}
               alt="Exported Anime Archive"
-              className="max-h-[48vh] max-w-full object-contain rounded shadow-lg select-all"
+              className="max-h-[calc(var(--sh,1vh)*48)] max-w-full object-contain rounded shadow-lg select-all"
             />
           </div>
 

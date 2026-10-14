@@ -214,13 +214,13 @@ export default function App() {
   };
 
   if (!isLoaded) {
-    return <div className="min-h-screen bg-editorial-dark flex items-center justify-center text-editorial-muted font-mono uppercase text-sm tracking-widest">Loading Archive...</div>;
+    return <div className="min-h-[calc(var(--sh,1vh)*100)] bg-editorial-dark flex items-center justify-center text-editorial-muted font-mono uppercase text-sm tracking-widest">Loading Archive...</div>;
   }
 
   const selectedCount = collection.filter(Boolean).length;
 
   return (
-    <div className={`min-h-screen selection:bg-editorial-accent selection:text-editorial-light ${isExporting ? 'exporting' : ''}`}>
+    <div className={`min-h-[calc(var(--sh,1vh)*100)] selection:bg-editorial-accent selection:text-editorial-light ${isExporting ? 'exporting' : ''}`}>
       
       {/* Fixed Header Actions */}
       <header className="fixed bottom-8 left-0 right-0 flex justify-center z-40 pointer-events-none px-4 md:top-8 md:bottom-auto md:right-12 md:left-auto">

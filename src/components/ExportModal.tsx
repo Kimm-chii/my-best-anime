@@ -77,7 +77,7 @@ export function ExportModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-md animate-fade-in font-mono">
-      <div className="bg-[#0A0A0C] border border-white/10 w-full max-w-4xl max-h-[92vh] flex flex-col rounded-xl shadow-2xl overflow-hidden">
+      <div className="bg-[#0A0A0C] border border-white/10 w-full max-w-4xl max-h-[calc(var(--sh,1vh)*92)] flex flex-col rounded-xl shadow-2xl overflow-hidden">
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-black/40">

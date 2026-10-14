@@ -16,7 +16,7 @@ export function HeroCollage({ collection, onOpenSearch, onLoadSample, onClear, i
   const hasSelections = slots.some(Boolean);
 
   return (
-    <section className="min-h-[70vh] h-[70vh] relative w-full overflow-hidden flex flex-col bg-editorial-dark border-b border-editorial-light/10">
+    <section className="min-h-[calc(var(--sh,1vh)*70)] h-[calc(var(--sh,1vh)*70)] relative w-full overflow-hidden flex flex-col bg-editorial-dark border-b border-editorial-light/10">
       
       {/* Background Shelf - Full Width/Height, No Interaction */}
       <div className="absolute inset-0 z-0 flex w-full h-full opacity-60">
