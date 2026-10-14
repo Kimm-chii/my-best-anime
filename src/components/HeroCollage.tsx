@@ -4,9 +4,12 @@ import { Anime } from '../types';
 interface HeroCollageProps {
   collection: (Anime | null)[];
   onOpenSearch: () => void;
+  onLoadSample: () => void;
+  onClear: () => void;
+  isLoadingSample: boolean;
 }
 
-export function HeroCollage({ collection, onOpenSearch }: HeroCollageProps) {
+export function HeroCollage({ collection, onOpenSearch, onLoadSample, onClear, isLoadingSample }: HeroCollageProps) {
   // Ensure we always have 10 slots for the shelf
   const slots = Array.from({ length: 10 }, (_, i) => collection[i] || null);
   
@@ -70,6 +73,31 @@ export function HeroCollage({ collection, onOpenSearch }: HeroCollageProps) {
           </h1>
         </div>
 
+        {/* First visit: show how the archive works */}
+        {!hasSelections && (
+          <div className="pointer-events-auto self-center flex flex-col items-center gap-4 text-center bg-editorial-dark/80 backdrop-blur-sm border border-editorial-light/15 px-6 py-6 md:px-10 md:py-8 max-w-md">
+            <p className="font-serif text-2xl md:text-3xl leading-tight">Your shelf is empty.</p>
+            <p className="font-mono text-[11px] uppercase tracking-widest text-editorial-light/60 leading-relaxed">
+              Pick ten favorites, then export them as a poster.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <button
+                onClick={onOpenSearch}
+                className="bg-editorial-light text-editorial-dark hover:bg-white px-5 py-3 font-mono text-xs uppercase tracking-widest whitespace-nowrap transition-colors"
+              >
+                Add your first title
+              </button>
+              <button
+                onClick={onLoadSample}
+                disabled={isLoadingSample}
+                className="border border-editorial-light/40 text-editorial-light hover:border-editorial-light px-5 py-3 font-mono text-xs uppercase tracking-widest whitespace-nowrap transition-colors disabled:opacity-50"
+              >
+                {isLoadingSample ? 'Loading...' : 'Try a sample shelf'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Bottom: My Best Anime Info & Metadata */}
         <div className="flex justify-between items-end">
           <div className="text-xs font-mono uppercase tracking-widest text-editorial-light/60">
@@ -83,6 +111,14 @@ export function HeroCollage({ collection, onOpenSearch }: HeroCollageProps) {
             <p className="mt-1 text-editorial-light">{new Date().getFullYear()}</p>
             <div className="mt-4 flex flex-col items-end gap-2">
                <span>Scroll to Explore ↓</span>
+               {hasSelections && (
+                 <button
+                   onClick={onClear}
+                   className="pointer-events-auto underline underline-offset-4 decoration-editorial-light/30 hover:text-editorial-light hover:decoration-editorial-light transition-colors py-1"
+                 >
+                   Clear shelf
+                 </button>
+               )}
             </div>
           </div>
         </div>

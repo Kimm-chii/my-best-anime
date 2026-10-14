@@ -156,3 +156,46 @@ export async function searchAnime(query: string): Promise<Anime[]> {
     throw new Error('AniList is temporarily unavailable. Search will return once the service is restored.');
   }
 }
+
+// A ready-made shelf so first-time visitors can see the archive and poster export in action
+export const SAMPLE_SHELF_IDS = [154587, 5114, 9253, 21827, 1, 457, 20665, 21507, 199, 16498];
+
+export async function getAnimeByIds(ids: number[]): Promise<Anime[]> {
+  const graphqlQuery = `
+  query ($ids: [Int]) {
+    Page(page: 1, perPage: 50) {
+      media(id_in: $ids, type: ANIME) {
+        id
+        title { romaji english }
+        coverImage { extraLarge large }
+        seasonYear
+        format
+        episodes
+      }
+    }
+  }
+  `;
+
+  const response = await fetch('https://graphql.anilist.co', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({ query: graphqlQuery, variables: { ids } }),
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const json = await response.json();
+  const media: any[] = json.data?.Page?.media || [];
+
+  const byId = new Map<number, Anime>(
+    media.map((item) => [item.id, {
+      id: item.id,
+      title: item.title?.romaji || item.title?.english || 'Untitled',
+      titleEnglish: item.title?.english || '',
+      imageUrl: item.coverImage?.extraLarge || item.coverImage?.large || '',
+      year: item.seasonYear,
+      type: item.format,
+      episodes: item.episodes,
+    }])
+  );
+  // Keep the curated order
+  return ids.map((id) => byId.get(id)).filter((a): a is Anime => Boolean(a));
+}

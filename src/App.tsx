@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { toJpeg } from 'html-to-image';
 import { Download, Share2 } from 'lucide-react';
 import { loadCollection, saveCollection } from './lib/storage';
+import { getAnimeByIds, SAMPLE_SHELF_IDS } from './lib/api';
 import { Anime } from './types';
 import { SearchModal } from './components/SearchModal';
 import { HeroCollage } from './components/HeroCollage';
@@ -20,6 +21,7 @@ export default function App() {
   const [exportCollection, setExportCollection] = useState<(Anime | null)[] | null>(null);
   const [resultImageUrl, setResultImageUrl] = useState<string | null>(null);
   const [resultFileName, setResultFileName] = useState<string>('');
+  const [isLoadingSample, setIsLoadingSample] = useState(false);
   const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -91,6 +93,26 @@ export default function App() {
       });
     }
     setSearchSlot(null);
+  };
+
+  const handleLoadSample = async () => {
+    setIsLoadingSample(true);
+    try {
+      const sample = await getAnimeByIds(SAMPLE_SHELF_IDS);
+      if (sample.length === 0) throw new Error('Empty sample');
+      setCollection(Array.from({ length: 10 }, (_, i) => sample[i] || null));
+    } catch (err) {
+      console.warn('Sample shelf failed to load', err);
+      alert('AniList is not responding right now. Please try again in a moment.');
+    } finally {
+      setIsLoadingSample(false);
+    }
+  };
+
+  const handleClear = () => {
+    if (confirm('Clear all ten slots from your shelf?')) {
+      setCollection(Array(10).fill(null));
+    }
   };
 
   const handleRemove = (index: number) => {
@@ -220,6 +242,9 @@ export default function App() {
         <HeroCollage 
           collection={collection} 
           onOpenSearch={() => setSearchSlot(collection.findIndex(a => !a))} 
+          onLoadSample={handleLoadSample}
+          onClear={handleClear}
+          isLoadingSample={isLoadingSample}
         />
         <ArchiveList 
           collection={collection} 
